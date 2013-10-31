@@ -2,8 +2,8 @@
   "name": "perfdump",
   "version": "0.1.0",
   "private": true,
-  "scripts": {
-    "start": "node index.js"
+  "bin": {
+    "perfdump": "./bin/perfdump"
   },
   "dependencies": {
     "async": "~0.1.22",
@@ -11,5 +11,15 @@
     "csv": "*",
     "node-voisus": "git+ssh://git@github.com:astilabs/node-voisus.git#perftool"
   },
-  "main": "index.js"
+  "main": "index.js",
+  "readmeFilename": "README.md",
+  "gitHead": "5c1c0898a060db0eb973e1e64e0c361af14bd1b7",
+  "description": "node-perfdump =============",
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/astilabs/node-perfdump.git"
+  },
+  "author": "",
+  "license": "BSD"
 }
