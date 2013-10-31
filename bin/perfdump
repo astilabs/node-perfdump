@@ -1,0 +1,29 @@
+#!/usr/bin/env node
+var perfdump = require('../lib');
+var program = require('commander');
+var async = require('async');
+var csv = require('csv');
+
+program
+  .version('0.1.0')
+  .option('-s, --server <ip>', 'server ip address')
+  .option('-n, --scenario <scenario id>', 'scenario id')
+  .option('-i, --ignore <true/false>', 'ignore failed tests. default: [true]', 'true')
+  .option('-o, --outfile <file>', 'output path. default: '+process.env.HOME+'/data.csv', process.env.HOME+'/perf.csv')
+  .parse(process.argv);
+
+if(program.server && program.scenario) {
+  console.log('  - server: %s', program.server);
+  console.log('  - scenario: %s', program.scenario);
+  console.log('  - ignore: %s', program.ignore);
+  console.log('  - outfile: %s', program.outfile);
+
+  var data = perfdump.reader(program.server, program.scenario, program.ignore);
+  var out = perfdump.writer(program.outfile);
+  data.pipe(csv()).pipe(out);
+}
+else {
+  console.log('  - Error: missing one or more arguments.');
+  console.log('  - Please provide a server ip, scenario id, and an output file.');
+}
+

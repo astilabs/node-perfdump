@@ -1,0 +1,15 @@
+{
+  "name": "perfdump",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "async": "~0.1.22",
+    "commander": "~2.0.0",
+    "csv": "*",
+    "node-voisus": "git+ssh://git@github.com:astilabs/node-voisus.git#perftool"
+  },
+  "main": "index.js"
+}
