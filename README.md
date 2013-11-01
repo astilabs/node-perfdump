@@ -33,7 +33,7 @@ perfdump --help
     -s, --server <ip>             server ip address
     -n, --scenario <scenario id>  scenario id
     -i, --ignore <true/false>     ignore failed tests. default: [true]
-    -o, --outfile <file>          output path. default: /Users/rossk/data.csv
+    -o, --outfile <file>          output path. default: /Users/rossk/perf.csv
 
 
 ## Example
@@ -45,7 +45,7 @@ perfdump --help
   - outfile: ./out.csv
 Connecting to: vbs3.hearvoisus.com on scenario: e673f38989514ccda3bf0ffc82083f17
 wrote: Performance_test_report-2
-False: Performance_test_report-1
+ignored: Performance_test_report-1
 Complete
 ```
 
