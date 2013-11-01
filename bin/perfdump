@@ -9,7 +9,7 @@ program
   .option('-s, --server <ip>', 'server ip address')
   .option('-n, --scenario <scenario id>', 'scenario id')
   .option('-i, --ignore <true/false>', 'ignore failed tests. default: [true]', 'true')
-  .option('-o, --outfile <file>', 'output path. default: '+process.env.HOME+'/data.csv', process.env.HOME+'/perf.csv')
+  .option('-o, --outfile <file>', 'output path. default: '+process.env.HOME+'/perf.csv', process.env.HOME+'/perf.csv')
   .parse(process.argv);
 
 if(program.server && program.scenario) {
