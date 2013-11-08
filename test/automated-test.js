@@ -7,12 +7,11 @@ var perfdump = require('../lib');
 
 // global vars
 var server = {
-  host: "162.209.102.224"
+  host: "IPAddress"
 };
 var client = {
-  host_1: "162.209.100.166",
-  host_2: "162.209.96.237",
-  host_3: "IPAddress"
+  host_1: "IPAddress",
+  host_2: "IPAddress"
 };
 
 describe('Voisus server automated tests: ', function () {
