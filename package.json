@@ -5,11 +5,15 @@
   "bin": {
     "perfdump": "./bin/perfdump"
   },
+  "scripts": {
+    "test": "mocha test/automated-test.js -R spec --timeout 864000"
+  },
   "dependencies": {
     "async": "~0.1.22",
     "commander": "~2.0.0",
     "csv": "*",
-    "node-voisus": "git+ssh://git@github.com:astilabs/node-voisus.git#perftool"
+    "node-voisus": "git+ssh://git@github.com:astilabs/node-voisus.git#perftool_new",
+    "progress": "*"
   },
   "main": "index.js",
   "readmeFilename": "README.md",
@@ -19,6 +23,10 @@
   "repository": {
     "type": "git",
     "url": "git://github.com/astilabs/node-perfdump.git"
+  },
+  "devDependencies": {
+    "mocha": "*",
+    "should": "*"
   },
   "author": "",
   "license": "BSD"
