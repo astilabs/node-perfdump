@@ -85,7 +85,7 @@ perfdump has the option to run automated tests. However there is no commandline 
 
 __Requirements__:
 
-Must provide a server ip where the tests will be performed. Must provided at least one client ip.
+Must provide a voisus server ip where the tests will be performed. Must also provide at least one voisus client ip.
 
 ```javascript
 // if not using load balancer, use the host ip for loadBalancer
@@ -99,20 +99,20 @@ var client = {
 };
 ```
 
-to run:
+__Running__:
 
 ```
 npm test
 ```
 
-___How to add more test___:
+___Adding tests___:
 
-To add more tests simply create a new test case (using mocha framework), and modify the test, radios, clients objects.
+To add more tests simply create a new test case (using mocha framework), and modify the test, radios, clients objects. The test will automatically generate a csv file of each test it runs. 
 
 example:
 
 ```javascript
-it('should run and automated performance test from a template with 10 clients', function(done) {
+it('should run and automated test with 10 clients', function(done) {
     var d = new Date();
     var timestamp = d.getHours()+'.'+d.getMinutes()+'.'+d.getSeconds();
     var test = {
