@@ -5,652 +5,310 @@ var csv = require('csv');
 var nVoisus = require('voisus');
 var perfdump = require('../lib');
 
-// global vars
+// if not using load balancer, use the host ip for loadBalancer
 var server = {
-  host: "IPAddress"
+  host: "IPAddress",
+  loadBalancer: "IPAddress"
 };
 var client = {
   host_1: "IPAddress",
   host_2: "IPAddress"
 };
 
+// if this is set, all test will default to this value
+var test_duration;
+var test_delay;
+var lb_wait; // wait time to make up for cloud servers
+
 describe('Voisus server automated tests: ', function () {
-
   it('should run and automated performance test from a template with 10 clients', function(done) {
-    var scn, ssn, radios, clients;
-    var test_time = 30;
-    var test_name = 'automated_test_1';
-    var hapi = nVoisus.createHapi(server.host);
-    async.waterfall([
-      function(cb) {
-        hapi.getTemplates(cb);
-      },
-      function(result, cb) {
-        var template;
-        for(var i in result) {
-          if(result[i] === 'Basic_Example') {
-            template = result[i];
-          }
-        }
-        hapi.createScenarioFromTemplate(test_name, template, cb);
-      },
-      function(result, cb) {
-        scn = result;
-        hapi.runScenario(scn.scnId, cb);
-      },
-      function(result, cb) {
-        hapi.getRunningSession(cb);
-      },
-      function(result, cb) {
-        ssn = result.session_id;
-        scn.getNets(cb);
-      },
-      function(result, cb) {
-        radios = {
-          host: server.host,
-          scnId: scn.scnId
-        };
-        for(var i in result) {
-          if(result[i].name === 'Coordination') {
-            radios.netId = result[i].id;
-          }
-        }
-        scn.getRoles(cb);
-      },
-      function(result, cb) {
-        clients = [];
-        var c = {
-          total_clients: 10,
-          client_host: client.host_1,
-          test_rx: true,
-          randomize: false,
-          host: server.host,
-          scnId: scn.scnId
-        };
-        for(var i in result) {
-          if(result[i].name === 'Role_Ex1') {
-            c.roleId = result[i].id;
-          }
-        }
-        clients.push(c);
-
-        var test = {
-          session: ssn,
-          name: test_name,
-          duration: test_time,
-          test_server: server.host
-        };
-
-        var perf = _createPerformanceTest(test, radios, clients);
-        scn.runPerformanceTest(perf, cb);
-      },
-      function(result, cb) {
-        var bar = new progressBar('[:bar] :percent  elapsed: :elapsed', { total: test_time });
-        var timer = setInterval(function() {
-          scn.getPerformanceTestReports(function(err, result) {
-            for(var i in result.items) {
-              if(result.items[i].progress > 0) {
-                bar.update(result.items[i].progress);
-                if(bar.complete) {
-                  clearInterval(timer);
-                  cb(null);
-                }
-              }
-            }
-          });
-        }, 1000);
-      },
-      function(cb) {
-        var data = perfdump.reader(server.host, scn.scnId, false);
-        var out = perfdump.writer(process.env.HOME+'/'+test_name+'.csv');
-        data.pipe(csv()
-          .on('end', function(count) {
-            cb(null);
-            //hapi.deleteScenario(scn.scnId, cb);
-          })
-          .on('error', function(error) {
-            console.log(error.message);
-            cb(error);
-          }))
-        .pipe(out);
+    var d = new Date();
+    var timestamp = d.getHours()+'.'+d.getMinutes()+'.'+d.getSeconds();
+    var test = {
+      name: 'automated_test_1 - '+timestamp,
+      duration: test_duration || 30,
+      preDelay: test_delay || 10,
+      template: 'Basic_Example',
+      net: 'Coordination',
+      role: 'Role_Ex1'
+    };
+    var radios = {
+      host: server.host,
+      freq: 140.6
+    };
+    var clients = [
+      {
+        total_clients: 10,
+        client_host: client.host_1,
+        test_rx: true,
+        randomize: false,
+        host: server.host
       }
-    ], function(err) {
-      should.not.exist(err);
+    ];
+    createTemplateTest(test, radios, clients, function(err) {
       done();
     });
   });
 
   it('should run and automated performance test from a template with 20 clients', function(done) {
-    var scn, ssn, radios, clients;
-    var test_time = 30;
-    var test_name = 'automated_test_2';
-    var hapi = nVoisus.createHapi(server.host);
-    async.waterfall([
-      function(cb) {
-        hapi.getTemplates(cb);
-      },
-      function(result, cb) {
-        var template;
-        for(var i in result) {
-          if(result[i] === 'Basic_Example') {
-            template = result[i];
-          }
-        }
-        hapi.createScenarioFromTemplate(test_name, template, cb);
-      },
-      function(result, cb) {
-        scn = result;
-        hapi.runScenario(scn.scnId, cb);
-      },
-      function(result, cb) {
-        hapi.getRunningSession(cb);
-      },
-      function(result, cb) {
-        ssn = result.session_id;
-        scn.getNets(cb);
-      },
-      function(result, cb) {
-        radios = {
-          host: server.host,
-          scnId: scn.scnId
-        };
-        for(var i in result) {
-          if(result[i].name === 'Coordination') {
-            radios.netId = result[i].id;
-          }
-        }
-        scn.getRoles(cb);
-      },
-      function(result, cb) {
-        clients = [];
-        var c = {
-          total_clients: 20,
-          client_host: client.host_1,
-          test_rx: true,
-          randomize: false,
-          host: server.host,
-          scnId: scn.scnId
-        };
-        for(var i in result) {
-          if(result[i].name === 'Role_Ex1') {
-            c.roleId = result[i].id;
-          }
-        }
-        clients.push(c);
-
-        var test = {
-          session: ssn,
-          name: test_name,
-          duration: test_time,
-          test_server: server.host
-        };
-
-        var perf = _createPerformanceTest(test, radios, clients);
-        scn.runPerformanceTest(perf, cb);
-      },
-      function(result, cb) {
-        var bar = new progressBar('[:bar] :percent  elapsed: :elapsed', { total: test_time });
-        var timer = setInterval(function() {
-          scn.getPerformanceTestReports(function(err, result) {
-            for(var i in result.items) {
-              if(result.items[i].progress > 0) {
-                bar.update(result.items[i].progress);
-                if(bar.complete) {
-                  clearInterval(timer);
-                  cb(null);
-                }
-              }
-            }
-          });
-        }, 1000);
-      },
-      function(cb) {
-        var data = perfdump.reader(server.host, scn.scnId, false);
-        var out = perfdump.writer(process.env.HOME+'/'+test_name+'.csv');
-        data.pipe(csv()
-          .on('end', function(count) {
-            cb(null);
-            //hapi.deleteScenario(scn.scnId, cb);
-          })
-          .on('error', function(error) {
-            console.log(error.message);
-            cb(error);
-          }))
-        .pipe(out);
+    var d = new Date();
+    var timestamp = d.getHours()+'.'+d.getMinutes()+'.'+d.getSeconds();
+    var test = {
+      name: 'automated_test_2 - '+timestamp,
+      duration: test_duration || 30,
+      preDelay: test_delay || 10,
+      template: 'Basic_Example',
+      net: 'Coordination',
+      role: 'Role_Ex1'
+    };
+    var radios = {
+      host: server.host,
+      freq: 140.6
+    };
+    var clients = [
+      {
+        total_clients: 20,
+        client_host: client.host_1,
+        test_rx: true,
+        randomize: false,
+        host: server.host
       }
-    ], function(err) {
-      should.not.exist(err);
+    ];
+    createTemplateTest(test, radios, clients, function(err) {
       done();
     });
   });
 
   it('should run and automated performance test from a template with 30 clients', function(done) {
-    var scn, ssn, radios, clients;
-    var test_time = 30;
-    var test_name = 'automated_test_3';
-    var hapi = nVoisus.createHapi(server.host);
-    async.waterfall([
-      function(cb) {
-        hapi.getTemplates(cb);
-      },
-      function(result, cb) {
-        var template;
-        for(var i in result) {
-          if(result[i] === 'Basic_Example') {
-            template = result[i];
-          }
-        }
-        hapi.createScenarioFromTemplate(test_name, template, cb);
-      },
-      function(result, cb) {
-        scn = result;
-        hapi.runScenario(scn.scnId, cb);
-      },
-      function(result, cb) {
-        hapi.getRunningSession(cb);
-      },
-      function(result, cb) {
-        ssn = result.session_id;
-        scn.getNets(cb);
-      },
-      function(result, cb) {
-        radios = {
-          host: server.host,
-          scnId: scn.scnId
-        };
-        for(var i in result) {
-          if(result[i].name === 'Coordination') {
-            radios.netId = result[i].id;
-          }
-        }
-        scn.getRoles(cb);
-      },
-      function(result, cb) {
-        clients = [];
-        var c = {
-          total_clients: 30,
-          client_host: client.host_1,
-          test_rx: true,
-          randomize: false,
-          host: server.host,
-          scnId: scn.scnId
-        };
-        for(var i in result) {
-          if(result[i].name === 'Role_Ex1') {
-            c.roleId = result[i].id;
-          }
-        }
-        clients.push(c);
-
-        var test = {
-          session: ssn,
-          name: test_name,
-          duration: test_time,
-          test_server: server.host
-        };
-
-        var perf = _createPerformanceTest(test, radios, clients);
-        scn.runPerformanceTest(perf, cb);
-      },
-      function(result, cb) {
-        var bar = new progressBar('[:bar] :percent  elapsed: :elapsed', { total: test_time });
-        var timer = setInterval(function() {
-          scn.getPerformanceTestReports(function(err, result) {
-            for(var i in result.items) {
-              if(result.items[i].progress > 0) {
-                bar.update(result.items[i].progress);
-                if(bar.complete) {
-                  clearInterval(timer);
-                  cb(null);
-                }
-              }
-            }
-          });
-        }, 1000);
-      },
-      function(cb) {
-        var data = perfdump.reader(server.host, scn.scnId, false);
-        var out = perfdump.writer(process.env.HOME+'/'+test_name+'.csv');
-        data.pipe(csv()
-          .on('end', function(count) {
-            cb(null);
-            //hapi.deleteScenario(scn.scnId, cb);
-          })
-          .on('error', function(error) {
-            console.log(error.message);
-            cb(error);
-          }))
-        .pipe(out);
+    var d = new Date();
+    var timestamp = d.getHours()+'.'+d.getMinutes()+'.'+d.getSeconds();
+    var test = {
+      name: 'automated_test_3 - '+timestamp,
+      duration: test_duration || 30,
+      preDelay: test_delay || 10,
+      template: 'Basic_Example',
+      net: 'Coordination',
+      role: 'Role_Ex1'
+    };
+    var radios = {
+      host: server.host,
+      freq: 140.6
+    };
+    var clients = [
+      {
+        total_clients: 30,
+        client_host: client.host_1,
+        test_rx: true,
+        randomize: false,
+        host: server.host
       }
-    ], function(err) {
-      should.not.exist(err);
+    ];
+    createTemplateTest(test, radios, clients, function(err) {
       done();
     });
   });
 
   it('should run and automated performance test from a template with 40 clients', function(done) {
-    var scn, ssn, radios, clients;
-    var test_time = 30;
-    var test_name = 'automated_test_4';
-    var hapi = nVoisus.createHapi(server.host);
-    async.waterfall([
-      function(cb) {
-        hapi.getTemplates(cb);
-      },
-      function(result, cb) {
-        var template;
-        for(var i in result) {
-          if(result[i] === 'Basic_Example') {
-            template = result[i];
-          }
-        }
-        hapi.createScenarioFromTemplate(test_name, template, cb);
-      },
-      function(result, cb) {
-        scn = result;
-        hapi.runScenario(scn.scnId, cb);
-      },
-      function(result, cb) {
-        hapi.getRunningSession(cb);
-      },
-      function(result, cb) {
-        ssn = result.session_id;
-        scn.getNets(cb);
-      },
-      function(result, cb) {
-        radios = {
-          host: server.host,
-          scnId: scn.scnId
-        };
-        for(var i in result) {
-          if(result[i].name === 'Coordination') {
-            radios.netId = result[i].id;
-          }
-        }
-        scn.getRoles(cb);
-      },
-      function(result, cb) {
-        clients = [];
-        var c = {
-          total_clients: 40,
-          client_host: client.host_1,
-          test_rx: true,
-          randomize: false,
-          host: server.host,
-          scnId: scn.scnId
-        };
-        for(var i in result) {
-          if(result[i].name === 'Role_Ex1') {
-            c.roleId = result[i].id;
-          }
-        }
-        clients.push(c);
-
-        var test = {
-          session: ssn,
-          name: test_name,
-          duration: test_time,
-          test_server: server.host
-        };
-
-        var perf = _createPerformanceTest(test, radios, clients);
-        scn.runPerformanceTest(perf, cb);
-      },
-      function(result, cb) {
-        var bar = new progressBar('[:bar] :percent  elapsed: :elapsed', { total: test_time });
-        var timer = setInterval(function() {
-          scn.getPerformanceTestReports(function(err, result) {
-            for(var i in result.items) {
-              if(result.items[i].progress > 0) {
-                bar.update(result.items[i].progress);
-                if(bar.complete) {
-                  clearInterval(timer);
-                  cb(null);
-                }
-              }
-            }
-          });
-        }, 1000);
-      },
-      function(cb) {
-        var data = perfdump.reader(server.host, scn.scnId, false);
-        var out = perfdump.writer(process.env.HOME+'/'+test_name+'.csv');
-        data.pipe(csv()
-          .on('end', function(count) {
-            cb(null);
-            //hapi.deleteScenario(scn.scnId, cb);
-          })
-          .on('error', function(error) {
-            console.log(error.message);
-            cb(error);
-          }))
-        .pipe(out);
+    var d = new Date();
+    var timestamp = d.getHours()+'.'+d.getMinutes()+'.'+d.getSeconds();
+    var test = {
+      name: 'automated_test_4 - '+timestamp,
+      duration: test_duration || 30,
+      preDelay: test_delay || 10,
+      template: 'Basic_Example',
+      net: 'Coordination',
+      role: 'Role_Ex1'
+    };
+    var radios = {
+      host: server.host,
+      freq: 140.6
+    };
+    var clients = [
+      {
+        total_clients: 40,
+        client_host: client.host_1,
+        test_rx: true,
+        randomize: false,
+        host: server.host
       }
-    ], function(err) {
-      should.not.exist(err);
+    ];
+    createTemplateTest(test, radios, clients, function(err) {
       done();
     });
   });
 
   it('should run and automated performance test from a template with 50 clients', function(done) {
-    var scn, ssn, radios, clients;
-    var test_time = 30;
-    var test_name = 'automated_test_5';
-    var hapi = nVoisus.createHapi(server.host);
-    async.waterfall([
-      function(cb) {
-        hapi.getTemplates(cb);
-      },
-      function(result, cb) {
-        var template;
-        for(var i in result) {
-          if(result[i] === 'Basic_Example') {
-            template = result[i];
-          }
-        }
-        hapi.createScenarioFromTemplate(test_name, template, cb);
-      },
-      function(result, cb) {
-        scn = result;
-        hapi.runScenario(scn.scnId, cb);
-      },
-      function(result, cb) {
-        hapi.getRunningSession(cb);
-      },
-      function(result, cb) {
-        ssn = result.session_id;
-        scn.getNets(cb);
-      },
-      function(result, cb) {
-        radios = {
-          host: server.host,
-          scnId: scn.scnId
-        };
-        for(var i in result) {
-          if(result[i].name === 'Coordination') {
-            radios.netId = result[i].id;
-          }
-        }
-        scn.getRoles(cb);
-      },
-      function(result, cb) {
-        clients = [];
-        var c = {
-          total_clients: 50,
-          client_host: client.host_1,
-          test_rx: true,
-          randomize: false,
-          host: server.host,
-          scnId: scn.scnId
-        };
-        for(var i in result) {
-          if(result[i].name === 'Role_Ex1') {
-            c.roleId = result[i].id;
-          }
-        }
-        clients.push(c);
-
-        var test = {
-          session: ssn,
-          name: test_name,
-          duration: test_time,
-          test_server: server.host
-        };
-
-        var perf = _createPerformanceTest(test, radios, clients);
-        scn.runPerformanceTest(perf, cb);
-      },
-      function(result, cb) {
-        var bar = new progressBar('[:bar] :percent  elapsed: :elapsed', { total: test_time });
-        var timer = setInterval(function() {
-          scn.getPerformanceTestReports(function(err, result) {
-            for(var i in result.items) {
-              if(result.items[i].progress > 0) {
-                bar.update(result.items[i].progress);
-                if(bar.complete) {
-                  clearInterval(timer);
-                  cb(null);
-                }
-              }
-            }
-          });
-        }, 1000);
-      },
-      function(cb) {
-        var data = perfdump.reader(server.host, scn.scnId, false);
-        var out = perfdump.writer(process.env.HOME+'/'+test_name+'.csv');
-        data.pipe(csv()
-          .on('end', function(count) {
-            cb(null);
-            //hapi.deleteScenario(scn.scnId, cb);
-          })
-          .on('error', function(error) {
-            console.log(error.message);
-            cb(error);
-          }))
-        .pipe(out);
+    var d = new Date();
+    var timestamp = d.getHours()+'.'+d.getMinutes()+'.'+d.getSeconds();
+    var test = {
+      name: 'automated_test_5 - '+timestamp,
+      duration: test_duration || 30,
+      preDelay: test_delay || 10,
+      template: 'Basic_Example',
+      net: 'Coordination',
+      role: 'Role_Ex1'
+    };
+    var radios = {
+      host: server.host,
+      freq: 140.6
+    };
+    var clients = [
+      {
+        total_clients: 50,
+        client_host: client.host_1,
+        test_rx: true,
+        randomize: false,
+        host: server.host
       }
-    ], function(err) {
-      should.not.exist(err);
+    ];
+    createTemplateTest(test, radios, clients, function(err) {
       done();
     });
   });
 
-  it('should run and automated performance test from a template with 60 clients with two client hosts', function(done) {
-    var scn, ssn, radios, clients;
-    var test_time = 30;
-    var test_name = 'automated_test_6';
-    var hapi = nVoisus.createHapi(server.host);
-    async.waterfall([
-      function(cb) {
-        hapi.getTemplates(cb);
+  it.skip('should run and automated performance test from a template with 60 clients with two client hosts', function(done) {
+    var d = new Date();
+    var timestamp = d.getHours()+'.'+d.getMinutes()+'.'+d.getSeconds();
+    var test = {
+      name: 'automated_test_6 - '+timestamp,
+      duration: test_duration || 30,
+      preDelay: test_delay || 10,
+      template: 'Basic_Example',
+      net: 'Coordination',
+      role: 'Role_Ex1'
+    };
+    var radios = {
+      host: server.host,
+      freq: 140.6
+    };
+    var clients = [
+      {
+        total_clients: 30,
+        client_host: client.host_1,
+        test_rx: true,
+        randomize: false,
+        host: server.host
       },
-      function(result, cb) {
-        var template;
-        for(var i in result) {
-          if(result[i] === 'Basic_Example') {
-            template = result[i];
-          }
-        }
-        hapi.createScenarioFromTemplate(test_name, template, cb);
-      },
-      function(result, cb) {
-        scn = result;
-        hapi.runScenario(scn.scnId, cb);
-      },
-      function(result, cb) {
-        hapi.getRunningSession(cb);
-      },
-      function(result, cb) {
-        ssn = result.session_id;
-        scn.getNets(cb);
-      },
-      function(result, cb) {
-        radios = {
-          host: server.host,
-          scnId: scn.scnId
-        };
-        for(var i in result) {
-          if(result[i].name === 'Coordination') {
-            radios.netId = result[i].id;
-          }
-        }
-        scn.getRoles(cb);
-      },
-      function(result, cb) {
-        clients = [];
-        var c1 = {
-          total_clients: 30,
-          client_host: client.host_1,
-          test_rx: true,
-          randomize: false,
-          host: server.host,
-          scnId: scn.scnId
-        };
-        var c2 = {
-          total_clients: 30,
-          client_host: client.host_2,
-          test_rx: true,
-          randomize: false,
-          host: server.host,
-          scnId: scn.scnId
-        };
-        for(var i in result) {
-          if(result[i].name === 'Role_Ex1') {
-            c1.roleId = result[i].id;
-            c2.roleId = result[i].id;
-          }
-        }
-        clients.push(c1);
-        clients.push(c2);
-
-        var test = {
-          session: ssn,
-          name: test_name,
-          duration: test_time,
-          test_server: server.host
-        };
-
-        var perf = _createPerformanceTest(test, radios, clients);
-        scn.runPerformanceTest(perf, cb);
-      },
-      function(result, cb) {
-        var bar = new progressBar('[:bar] :percent  elapsed: :elapsed', { total: test_time });
-        var timer = setInterval(function() {
-          scn.getPerformanceTestReports(function(err, result) {
-            for(var i in result.items) {
-              if(result.items[i].progress > 0) {
-                bar.update(result.items[i].progress);
-                if(bar.complete) {
-                  clearInterval(timer);
-                  cb(null);
-                }
-              }
-            }
-          });
-        }, 1000);
-      },
-      function(cb) {
-        var data = perfdump.reader(server.host, scn.scnId, false);
-        var out = perfdump.writer(process.env.HOME+'/'+test_name+'.csv');
-        data.pipe(csv()
-          .on('end', function(count) {
-            cb(null);
-            //hapi.deleteScenario(scn.scnId, cb);
-          })
-          .on('error', function(error) {
-            console.log(error.message);
-            cb(error);
-          }))
-        .pipe(out);
+      {
+        total_clients: 30,
+        client_host: client.host_2,
+        test_rx: true,
+        randomize: false,
+        host: server.host
       }
-    ], function(err) {
-      should.not.exist(err);
+    ];
+    createTemplateTest(test, radios, clients, function(err) {
       done();
     });
   });
-
 });
+
+var createTemplateTest = function(test, radios, clients, callback) {
+  var scn, ssn;
+  var hapi = nVoisus.createHapi(server.host);
+  async.waterfall([
+    function(cb) {
+      hapi.getTemplates(cb);
+    },
+    function(result, cb) {
+      var template;
+      for(var i in result) {
+        if(result[i] === test.template) {
+          template = result[i];
+        }
+      }
+      hapi.createScenarioFromTemplate(test.name, template, cb);
+    },
+    function(result, cb) {
+      scn = result;
+      var dObj = {
+        "eth": 'eth2'
+      };
+      setTimeout(function() {
+        scn.putDis(dObj, cb);
+      }, lb_wait || 0);
+    },
+    function(result, cb) {
+      setTimeout(function() {
+        hapi.runScenario(scn.scnId, cb);
+      }, lb_wait || 0);
+    },
+    function(result, cb) {
+      hapi.getRunningSession(cb);
+    },
+    function(result, cb) {
+      ssn = result.session_id;
+      scn.getNets(cb);
+    },
+    function(result, cb) {
+      radios.scnId = scn.scnId;
+      for(var i in result) {
+        if(result[i].name === test.net) {
+          radios.netId = result[i].id;
+        }
+      }
+      scn.getRoles(cb);
+    },
+    function(result, cb) {
+      for(var i in clients) {
+        clients[i].scnId = scn.scnId;
+      }
+
+      for(var j in result) {
+        if(result[j].name === test.role) {
+          for(var k in clients) {
+            clients[k].roleId = result[i].id;
+          }
+        }
+      }
+
+      var config = {
+        session: ssn,
+        name: test.name,
+        duration: test.duration,
+        preDelay: test.preDelay,
+        test_server: server.host,
+        server: server.loadBalancer
+      };
+
+      var perf = _createPerformanceTest(config, radios, clients);
+      scn.runPerformanceTest(perf, cb);
+    },
+    function(result, cb) {
+      var bar = new progressBar('[:bar] :percent  elapsed: :elapsed', { total: test.duration });
+      var timer = setInterval(function() {
+        scn.getPerformanceTestReports(function(err, result) {
+          for(var i in result.items) {
+            if(result.items[i].progress > 0) {
+              bar.update(result.items[i].progress);
+              if(bar.complete) {
+                clearInterval(timer);
+                cb(null);
+              }
+            }
+          }
+        });
+      }, 2500);
+    },
+    function(cb) {
+      var data = perfdump.reader(server.host, scn.scnId, false);
+      var out = perfdump.writer(process.env.HOME+'/'+test.name+'.csv');
+      data.pipe(csv()
+        .on('end', function(count) {
+          cb(null);
+          //hapi.deleteScenario(scn.scnId, cb);
+        })
+        .on('error', function(error) {
+          console.log(error.message);
+          cb(error);
+        }))
+      .pipe(out);
+    }
+  ], function(err) {
+    should.not.exist(err);
+    callback();
+  });
+};
 
 /*  test object
  *
@@ -659,6 +317,7 @@ describe('Voisus server automated tests: ', function () {
  *  duration:     duration of the test
  *  test_server:  ip of the server running the test
  *  server:       ip of the server the cients will connect to
+ *  preDelay:     time to wait before test begins
 */
 
 var _createPerformanceTest = function(test, radios, clients) {
@@ -667,7 +326,7 @@ var _createPerformanceTest = function(test, radios, clients) {
     description: "automated test",
     radios: _createRadios(radios),
     clients: _createClients(clients),
-    predelay: 10.0,
+    predelay: test.preDelay,
     session: test.session,
     kill_all_remote: true,
     duration: test.duration,
@@ -735,7 +394,7 @@ var _createRadios = function(radios) {
     sound: null,
     net: 'https://'+radios.host+'/api/scenarios/'+radios.scnId+'/nets/'+radios.netId+'/',
     tone_gain: 1.0,
-    tone_freq: 140.6,
+    tone_freq: radios.freq || 140.6,
     test_rx: false
   };
 

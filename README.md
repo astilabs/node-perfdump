@@ -78,3 +78,66 @@ Currently node-perfdump writes out the following data:
 * Ace-Radio Max Time
 * Ace-Radio Worst Time
 * Ace-Radio Average Time
+
+## Automated tests
+
+perfdump has the option to run automated tests. However there is no commandline tool to run these tests. You must edit the file `automated-tests.js` which is located under the `test` folder of the module. 
+
+__Requirements__:
+
+Must provide a server ip where the tests will be performed. Must provided at least one client ip.
+
+```javascript
+// if not using load balancer, use the host ip for loadBalancer
+var server = {
+  host: "IPAddress",
+  loadBalancer: "IPAddress"
+};
+//
+var client = {
+  host_1: "IPAddress",
+};
+```
+
+to run:
+
+```
+npm test
+```
+
+___How to add more test___:
+
+To add more tests simply create a new test case (using mocha framework), and modify the test, radios, clients objects.
+
+example:
+
+```javascript
+it('should run and automated performance test from a template with 10 clients', function(done) {
+    var d = new Date();
+    var timestamp = d.getHours()+'.'+d.getMinutes()+'.'+d.getSeconds();
+    var test = {
+      name: 'automated_test_1 - '+timestamp,
+      duration: test_duration || 30,
+      preDelay: test_delay || 10,
+      template: 'Basic_Example',
+      net: 'Coordination',
+      role: 'Role_Ex1'
+    };
+    var radios = {
+      host: server.host,
+      freq: 140.6
+    };
+    var clients = [
+      {
+        total_clients: 10,
+        client_host: client.host_1,
+        test_rx: true,
+        randomize: false,
+        host: server.host
+      }
+    ];
+    createTemplateTest(test, radios, clients, function(err) {
+      done();
+    });
+  });
+```
