@@ -12,13 +12,16 @@ var server = {
 };
 var client = {
   host_1: "IPAddress",
-  host_2: "IPAddress"
+  host_2: "IPAddress",
+  host_3: "IPAddress",
+  host_4: "IPAddress",
+  host_5: "IPAddress"
 };
 
 // if this is set, all test will default to this value
-var test_duration;
+var test_duration = 300;
 var test_delay;
-var lb_wait; // wait time to make up for cloud servers
+var lb_wait = 20000; // wait time to make up for cloud servers
 
 describe('Voisus server automated tests: ', function () {
   it('should run and automated performance test from a template with 10 clients', function(done) {
@@ -201,6 +204,63 @@ describe('Voisus server automated tests: ', function () {
       done();
     });
   });
+
+  it.skip('should run and automated performance test from a template with 200 clients with 5 client hosts', function(done) {
+    var d = new Date();
+    var timestamp = d.getHours()+'.'+d.getMinutes()+'.'+d.getSeconds();
+    var test = {
+      name: 'automated_test_7 - '+timestamp,
+      duration: test_duration || 30,
+      preDelay: test_delay || 10,
+      template: 'Basic_Example',
+      net: 'Coordination',
+      role: 'Role_Ex1'
+    };
+    var radios = {
+      host: server.host,
+      freq: 140.6
+    };
+    var clients = [
+      {
+        total_clients: 40,
+        client_host: client.host_1,
+        test_rx: true,
+        randomize: false,
+        host: server.host
+      },
+      {
+        total_clients: 40,
+        client_host: client.host_2,
+        test_rx: true,
+        randomize: false,
+        host: server.host
+      },
+      {
+        total_clients: 40,
+        client_host: client.host_3,
+        test_rx: true,
+        randomize: false,
+        host: server.host
+      },
+      {
+        total_clients: 40,
+        client_host: client.host_4,
+        test_rx: true,
+        randomize: false,
+        host: server.host
+      },
+      {
+        total_clients: 40,
+        client_host: client.host_5,
+        test_rx: true,
+        randomize: false,
+        host: server.host
+      }
+    ];
+    createTemplateTest(test, radios, clients, function(err) {
+      done();
+    });
+  });
 });
 
 var createTemplateTest = function(test, radios, clients, callback) {
@@ -253,11 +313,10 @@ var createTemplateTest = function(test, radios, clients, callback) {
       for(var i in clients) {
         clients[i].scnId = scn.scnId;
       }
-
       for(var j in result) {
         if(result[j].name === test.role) {
           for(var k in clients) {
-            clients[k].roleId = result[i].id;
+            clients[k].roleId = result[j].id;
           }
         }
       }
@@ -275,7 +334,10 @@ var createTemplateTest = function(test, radios, clients, callback) {
       scn.runPerformanceTest(perf, cb);
     },
     function(result, cb) {
-      var bar = new progressBar('[:bar] :percent  elapsed: :elapsed', { total: test.duration });
+      var bar = new progressBar('[:bar] :percent  elapsed: :elapsed', {
+        total: test.duration,
+        width: 50
+      });
       var timer = setInterval(function() {
         scn.getPerformanceTestReports(function(err, result) {
           for(var i in result.items) {
