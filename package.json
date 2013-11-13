@@ -6,7 +6,7 @@
     "perfdump": "./bin/perfdump"
   },
   "scripts": {
-    "test": "mocha test/automated-test.js -R spec --timeout 864000"
+    "test": "mocha test/automated-test.js -R spec --timeout 900000"
   },
   "dependencies": {
     "async": "~0.1.22",

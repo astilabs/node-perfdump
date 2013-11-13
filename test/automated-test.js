@@ -18,10 +18,10 @@ var client = {
   host_5: "IPAddress"
 };
 
-// if this is set, all test will default to this value
-var test_duration = 300;
-var test_delay;
-var lb_wait = 20000; // wait time to make up for cloud servers
+// if set, all test will use to this value
+var test_duration = 30; //default 30
+var test_delay; // default 10
+var lb_wait; // wait time to make up for cloud servers
 
 describe('Voisus server automated tests: ', function () {
   it('should run and automated performance test from a template with 10 clients', function(done) {
@@ -334,6 +334,7 @@ var createTemplateTest = function(test, radios, clients, callback) {
       scn.runPerformanceTest(perf, cb);
     },
     function(result, cb) {
+      console.log('');
       var bar = new progressBar('[:bar] :percent  elapsed: :elapsed', {
         total: test.duration,
         width: 50
@@ -353,18 +354,28 @@ var createTemplateTest = function(test, radios, clients, callback) {
       }, 2500);
     },
     function(cb) {
-      var data = perfdump.reader(server.host, scn.scnId, false);
-      var out = perfdump.writer(process.env.HOME+'/'+test.name+'.csv');
-      data.pipe(csv()
-        .on('end', function(count) {
-          cb(null);
-          //hapi.deleteScenario(scn.scnId, cb);
-        })
-        .on('error', function(error) {
-          console.log(error.message);
-          cb(error);
-        }))
-      .pipe(out);
+      var streamIn = perfdump.reader(server.host, scn.scnId, false);
+      var streamOut = perfdump.writer(process.env.HOME+'/'+test.name+'.csv');
+
+      async.parallel([
+        function(cbp){
+          streamIn.server.pipe(csv()).pipe(streamOut.server);
+          streamOut.server.on('close', function() {
+            cbp(null);
+          });
+        },
+        function(cbp){
+          streamIn.client.pipe(csv()).pipe(streamOut.client);
+          streamOut.client.on('close', function() {
+            cbp(null);
+          });
+        }
+      ], function(err, results) {
+        if(err) {
+          console.log(err);
+        }
+        cb(null);
+      });
     }
   ], function(err) {
     should.not.exist(err);
