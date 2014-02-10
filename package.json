@@ -12,7 +12,7 @@
     "async": "~0.1.22",
     "commander": "~2.0.0",
     "csv": "*",
-    "node-voisus": "git+ssh://git@github.com:astilabs/node-voisus.git#perftool_new",
+    "node-voisus": "git+ssh://git@github.com:astilabs/node-voisus.git",
     "progress": "*"
   },
   "main": "index.js",
